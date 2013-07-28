@@ -1,16 +1,19 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Collections.Generic;
 using System.Threading;
 using System.Linq;
 using System.Text;
 using TShockAPI;
 using Terraria;
+using Hooks;
 
 namespace ClassWarfare
 {
-    public class Main
+    [APIVersion(1,12)]
+    public class Main : TerrariaPlugin
     {
-        #region properties
+        #region Properties
 
         public static List<CWGame> RunningGames { get; set; }
 
@@ -19,12 +22,70 @@ namespace ClassWarfare
         #endregion
 
         #region Initialize
+
+        public override void Initialize()
+        {
+            // TODO Load configuration
+
+            NetHooks.GreetPlayer += OnGreet;
+            GetDataHandlers.ItemDrop += OnItem;
+            GameHooks.Initialize += OnInit;
+            ServerHooks.Leave += OnLeave;
+
+            Commands.ChatCommands.Add(new Command("cw", Com, "cw", "classwarfare"));
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                NetHooks.GreetPlayer -= OnGreet;
+                GetDataHandlers.ItemDrop -= OnItem;
+                GameHooks.Initialize -= OnInit;
+                ServerHooks.Leave -= OnLeave;
+
+                Commands.ChatCommands.Add(new Command("cw", Com, "cw", "classwarfare"));
+            }
+            base.Dispose(disposing);
+        }
+
+        private static void OnInit()
+        {
+            // TODO Set up the database
+        }
+
         #endregion
 
         #region Command
+
+        private static void Com(CommandArgs com)
+        {
+            /* 
+             * /cw host <arena name> - cw,cwhost - hosts a game to that arena - anytime
+             * /cw join <arena name|player name> - cw - joins a game of cw -    if one is available
+             * /cw observe <arena name|ply name> - cw - observes a game of cw - if one is in session
+             * 
+             * /cw stats <player> - cw - gets the stats of a player - anytime/if game more
+             * 
+             * /cw chooseclass <class name> - cw - chooses a class for the game - if game ready
+             * /cw classinfo <class name> - cw - info on a class (make it awesome)
+            */
+        }
+
         #endregion
 
         #region Hooks
+
+        private static void OnGreet(int who, HandledEventArgs args)
+        {
+            // TODO get data
+        }
+
+        private static void OnLeave(int who)
+        {
+            // TODO save data
+        }
+
         #endregion
 
         #region UpdateThread

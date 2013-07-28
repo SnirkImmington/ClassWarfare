@@ -17,6 +17,15 @@ namespace ClassWarfare
         public DBItem[] Items { get; set; }
 
         public string Type { get; set; }
+
+        public string Strategy { get; set; }
+
+        public string Statistics()
+        {
+            // Defense: {0} | Attack: {1} | {2} bullets
+
+            return "";
+        }
     }
 
     /// <summary>
