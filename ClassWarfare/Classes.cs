@@ -131,9 +131,13 @@ namespace ClassWarfare
         public bool? ForcePvP { get; set; }
         public byte? ForceTeam { get; set; }
 
+        // Announcements
+        public byte AnnouncementLast { get; set; }
+
         // Game Data
         public byte GameNumber { get; set; }
         public PlayerLevel Level { get; set; }
+        public CWClass Class { get; set; }
 
         // Local Scores
         public uint GameKills { get; set; }
@@ -170,19 +174,50 @@ namespace ClassWarfare
         /// </summary>
         PlayingGame,
     }
-
+    
+    /// <summary>
+    /// Progress of a Class Warfare game.
+    /// </summary>
     enum GameLevel : byte
     {
+        /// <summary>
+        /// The game has been created, announce it to players.
+        /// </summary>
+        Announced = 0,
+        /// <summary>
+        /// Players have finished joining the game. They must choose classes.
+        /// </summary>
+        ChoosingClasses,
+        /// <summary>
+        /// The game is in progress. Send its info to observers.
+        /// </summary>
+        InProgress,
+        /// <summary>
+        /// Used to call the cleanup methods for the game.
+        /// </summary>
+        GameOver
     }
 
+    /// <summary>
+    /// Contains data for each Class Warfare game.
+    /// </summary>
     class CWGame
     {
-        public byte Host { get; set; }
-        // Unique Identifier
+        public int Host { get; set; }
 
-        public List<byte> Players { get; set; }
-        public List<byte> Observers { get; set; }
+        public List<int> Players { get; set; }
+        public List<int> Observers { get; set; }
 
         public ArenaData Arena { get; set; }
+        public GameLevel Level { get; set; }
+
+        public CWGame(TSPlayer host, ArenaData arena)
+        {
+            Host = host.Index;
+            Arena = arena;
+            Level = GameLevel.Announced;
+            Players = new List<int>();
+            Observers = new List<int>();
+        }
     }
 }

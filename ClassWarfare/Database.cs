@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,7 +13,26 @@ namespace ClassWarfare
 {
     static class Database
     {
-        
+        public static List<ArenaData> Arenas = new List<ArenaData>();
+        public static List<PlayerData> Players = new List<PlayerData>();
+
+        public static IDbConnection Connection { get; set; }
+
+        public static void ReloadDatabase()
+        {
+            if (TShock.Config.StorageType.ToLower() == "sqlite")
+            { 
+            }
+            else if (TShock.Config.StorageType.ToLower() == "mysql")
+            {
+            }
+            else
+            {
+                // Yes, TShock handles this.
+                TSPlayer.Server.SendErrorMessage("You've formatted your database wrong. Use \"mysql\" or \"sqlite\" instead.");
+                throw new ArgumentException("Invalid storage type.");
+            }
+        }
     }
 
     class PlayerData
