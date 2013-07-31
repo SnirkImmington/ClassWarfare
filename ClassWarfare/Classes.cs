@@ -17,15 +17,9 @@ namespace ClassWarfare
         public DBItem[] Items { get; set; }
 
         public string Type { get; set; }
-
-        public string Strategy { get; set; }
-
-        public string Statistics()
-        {
-            // Defense: {0} | Attack: {1} | {2} bullets
-
-            return "";
-        }
+        public string Difficulty { get; set; }
+        public string Mobility { get; set; }
+        public string Info { get; set; }
     }
 
     /// <summary>
@@ -142,9 +136,10 @@ namespace ClassWarfare
 
         // Announcements
         public byte AnnouncementLast { get; set; }
+        public byte InfoTimer { get; set; }
 
         // Game Data
-        public byte GameNumber { get; set; }
+        public byte? GameNumber { get; set; }
         public PlayerLevel Level { get; set; }
         public CWClass Class { get; set; }
 
@@ -155,6 +150,14 @@ namespace ClassWarfare
 
         // Game Scores
         public PlayerData Statistics { get; set; }
+
+        public CWPlayer()
+        {
+            ForcePvP = null; ForceTeam = null;
+            AnnouncementLast = InfoTimer = 0;
+            GameNumber = null;
+            Level = PlayerLevel.None;
+        }
     }
 
     /// <summary>
@@ -181,7 +184,7 @@ namespace ClassWarfare
         /// <summary>
         /// Is in game.
         /// </summary>
-        PlayingGame,
+        PlayingGame
     }
     
     /// <summary>

@@ -11,7 +11,7 @@ using Hooks;
 namespace ClassWarfare
 {
     [APIVersion(1,12)]
-    public class Main : TerrariaPlugin
+    public class PluginMain : TerrariaPlugin
     {
         #region Properties
 
@@ -19,9 +19,23 @@ namespace ClassWarfare
 
         public static CWPlayer[] Players { get; set; }
 
+        #region Overrides
+
+        public override string Name { get { return "Class Warfare Plugin"; } }
+        public override string Author { get { return "Snirk Immington"; } }
+        public override string Description { get { return "As of TShock 4.1, \"description\" token ain't used."; } }
+        public override Version Version { get { return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version; } }
+
+        #endregion
+
         #endregion
 
         #region Initialize
+
+        public PluginMain(Main game) : base(game)
+        {
+            Order = 1;
+        }
 
         public override void Initialize()
         {
@@ -29,6 +43,7 @@ namespace ClassWarfare
 
             NetHooks.GreetPlayer += OnGreet;
             GetDataHandlers.ItemDrop += OnItem;
+            GetDataHandlers.ChestOpen += OnChest;
             GameHooks.Initialize += OnInit;
             ServerHooks.Leave += OnLeave;
 
@@ -41,6 +56,7 @@ namespace ClassWarfare
             {
                 NetHooks.GreetPlayer -= OnGreet;
                 GetDataHandlers.ItemDrop -= OnItem;
+                GetDataHandlers.ChestOpen -= OnChest;
                 GameHooks.Initialize -= OnInit;
                 ServerHooks.Leave -= OnLeave;
 
@@ -86,6 +102,14 @@ namespace ClassWarfare
             // TODO save data
         }
 
+        private static void OnItem(object thisObjectIsNull, GetDataHandlers.ItemDropEventArgs args)
+        {
+        }
+
+        private static void OnChest(object poorPointlessObject, GetDataHandlers.ChestOpenEventArgs args)
+        {
+        }
+
         #endregion
 
         #region UpdateThread
@@ -111,6 +135,7 @@ namespace ClassWarfare
 
                             case GameLevel.ChoosingClasses:
                                 // Tell the players registered to hurry up with class choosing already.
+                                // also have class countdown timers, for second delays between info.
                                 break;
                                 
                             case GameLevel.InProgress: // Check for cheaters, etc.
