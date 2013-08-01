@@ -18,8 +18,13 @@ namespace ClassWarfare
 
         public string Type { get; set; }
         public string Difficulty { get; set; }
-        public string Mobility { get; set; }
         public string Info { get; set; }
+
+        public CWClass(string name, Item[] items, string type, string diff, string mob, string inf)
+        {
+        }
+
+        public CWClass() { } // From database.
     }
 
     /// <summary>
@@ -39,6 +44,14 @@ namespace ClassWarfare
         public DBItem(Item it)
         {
             ID = it.netID; Stack = it.stack; Prefix = it.prefix;
+        }
+
+        public DBItem(string dbin)
+        {
+            var chars = dbin.Split(',');
+            ID = int.Parse(chars[0]);
+            Stack = int.Parse(chars[1]);
+            Prefix = byte.Parse(chars[2]);
         }
     }
 
@@ -151,10 +164,19 @@ namespace ClassWarfare
         // Game Scores
         public PlayerData Statistics { get; set; }
 
+        // Admin settings
+        public bool? GonnaMakeAClass { get; set; }
+        public string ClassName { get; set; }
+        public string ClassType { get; set; }
+        public string ClassDiff { get; set; }
+        public string ClassMob { get; set; }
+        public string ClassBlurb { get; set; }
+
         public CWPlayer()
         {
             ForcePvP = null; ForceTeam = null;
             AnnouncementLast = InfoTimer = 0;
+            GonnaMakeAClass = false;
             GameNumber = null;
             Level = PlayerLevel.None;
         }
@@ -230,6 +252,19 @@ namespace ClassWarfare
             Level = GameLevel.Announced;
             Players = new List<int>();
             Observers = new List<int>();
+        }
+    }
+
+    class QuitterData
+    {
+        public string IPAddress { get; set; }
+        public DateTime QuitTime { get; set; }
+        public CWClass CWClass { get; set; }
+
+        public QuitterData(int ply)
+        {
+            IPAddress = TShock.Players[ply].IP;
+            QuitTime = DateTime.UtcNow;
         }
     }
 }

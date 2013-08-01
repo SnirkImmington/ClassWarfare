@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using System.ComponentModel;
 using System.Collections.Generic;
 using System.Threading;
@@ -15,16 +16,37 @@ namespace ClassWarfare
     {
         #region Properties
 
-        public static List<CWGame> RunningGames { get; set; }
-
+        private static List<CWGame> RunningGames;
         public static CWPlayer[] Players { get; set; }
+        private static List<QuitterData> Quitters;
+
+        #region Arena Setting
+
+        // Spawnpoints
+        private static Point ArenaRedSpawn  = Point.Zero;
+        private static Point ArenaBlueSpawn = Point.Zero;
+
+        // Arena observation point
+        private static Point ArenaObserve = Point.Zero;
+
+        // Names of minetile regions
+        private static List<string> ArenaRedRegions  = new List<string>();
+        private static List<string> ArenaBlueRegions = new List<string>();
+
+        // Arena MineTileID
+        private static int ArenaMineTile = 0;
+
+        // Arena Tripwire point
+        private static Point ArenaTripWire = Point.Zero;
+
+        #endregion
 
         #region Overrides
 
         public override string Name { get { return "Class Warfare Plugin"; } }
         public override string Author { get { return "Snirk Immington"; } }
         public override string Description { get { return "As of TShock 4.1, \"description\" token ain't used."; } }
-        public override Version Version { get { return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version; } }
+        public override Version Version { get { return Assembly.GetExecutingAssembly().GetName().Version; } }
 
         #endregion
 
@@ -35,6 +57,9 @@ namespace ClassWarfare
         public PluginMain(Main game) : base(game)
         {
             Order = 1;
+            Players = new CWPlayer[255];
+            RunningGames = new List<CWGame>();
+            Quitters = new List<QuitterData>();
         }
 
         public override void Initialize()
@@ -46,6 +71,8 @@ namespace ClassWarfare
             GetDataHandlers.ChestOpen += OnChest;
             GameHooks.Initialize += OnInit;
             ServerHooks.Leave += OnLeave;
+
+            AppDomain.CurrentDomain.UnhandledException += OnFailure;
 
             Commands.ChatCommands.Add(new Command("cw", Com, "cw", "classwarfare"));
         }
@@ -60,9 +87,16 @@ namespace ClassWarfare
                 GameHooks.Initialize -= OnInit;
                 ServerHooks.Leave -= OnLeave;
 
-                Commands.ChatCommands.Add(new Command("cw", Com, "cw", "classwarfare"));
+                AppDomain.CurrentDomain.UnhandledException -= OnFailure;
+
+                Database.SaveDatabase();
             }
             base.Dispose(disposing);
+        }
+
+        private static void OnFailure(object weeeee, UnhandledExceptionEventArgs e)
+        {
+            Database.SaveDatabase();
         }
 
         private static void OnInit()
@@ -85,7 +119,71 @@ namespace ClassWarfare
              * 
              * /cw chooseclass <class name> - cw - chooses a class for the game - if game ready
              * /cw classinfo <class name> - cw - info on a class (make it awesome)
+             * /cw classlist [type] - cw - classes of a type - 
+             * 
+             * /cw newclass <name> <difficulty> <type> <description> - cwadmin
+             * /cw modclass <type> [new data] - cwadmin - support chest thing
+             * 
+             * /cw arenaset [type] - cwadmin
+             * /cw arenadef <name> - cwadmin
             */
+            bool isAdmin = com.Player.Group.HasPermission("cwadmin");
+            var player = Players[com.Player.Index];
+            if (com.Parameters.Count == 0 || com.Parameters[0].ToLower() == "help")
+            {
+                com.Player.SendInfoMessage("This is the global command for Class Warfare. Here is some of what you can do right now:");
+                if (isAdmin) com.Player.SendInfoMessage("For administrative commands, use /cw adminhelp.");
+                switch (player.Level)
+                {
+                    case PlayerLevel.None:
+                        if (com.Player.Group.HasPermission("cwhost"))
+                            com.Player.SendInfoMessage("/cw host <arena name> - host a game of Class Warfare at that arena (/cw arenalist).");
+                        if (RunningGames.Count > 0)
+                            com.Player.SendInfoMessage("/cw join <arena name|host name> - joins a game of Class Warfare (/cw listgames)!");
+                            com.Player.SendInfoMessage("The /cw rules and class information commands are available anytime!");
+                        break;
+
+                    case PlayerLevel.ChoosingClass:
+                    case PlayerLevel.Joined:
+                        com.Player.SendInfoMessage("/cw classlist [type] | /cw classinfo|classitems <name> - learn about classes!");
+                        break;
+
+                    case PlayerLevel.ChosenClass:
+                    case PlayerLevel.PlayingGame:
+                        com.Player.SendInfoMessage("/cw stats <player> - see how much you're losing by!");
+                        break;
+                }
+            }
+
+            else switch (com.Parameters[0].ToLower())
+                {
+                    case "adminhelp":
+                        break;
+
+                    case "rules":
+                        break;
+
+                    case "host":
+                        break;
+
+                    case "join":
+                        break;
+
+                    case "chooseclass":
+                        break;
+
+                    case "classinfo":
+                        break;
+
+                    case "classitems":
+                        break;
+
+                    case "newclass":
+                        break;
+
+                    case "modclass":
+                        break;
+                }
         }
 
         #endregion
@@ -100,14 +198,38 @@ namespace ClassWarfare
         private static void OnLeave(int who)
         {
             // TODO save data
+            // TODO Resolve host
+
+            if (Players[who].Level != PlayerLevel.None)
+            {
+                
+            }
         }
 
-        private static void OnItem(object thisObjectIsNull, GetDataHandlers.ItemDropEventArgs args)
+        private static void OnTile(object thisAintUsed, GetDataHandlers.TileEditEventArgs args)
         {
-        }
+            if (Players[args.Player.Index].GonnaMakeAClass == true)
+            {
+                // Find the chest there
+                var ply = Players[args.Player.Index];
 
-        private static void OnChest(object poorPointlessObject, GetDataHandlers.ChestOpenEventArgs args)
-        {
+                for (int i = 0; i < Main.chest.Length; i++)
+                {
+                    if (Main.chest[i].x == args.X && Main.chest[i].y == args.Y)
+                    {
+                        // Chest found, create the CWClass.
+                        // Checks for the params are in the command.
+
+                        args.Handled = true;
+
+                        var Class = new CWClass(ply.ClassName, Main.chest[i].item, ply.ClassType, ply.ClassDiff, ply.ClassMob, ply.ClassBlurb);
+
+                        args.Player.SendSuccessMessage(string.Format("Created {0} class {1}: {2}", Class.Type, Class.Name, Class.Info));
+
+                        
+                    }
+                }
+            }
         }
 
         #endregion

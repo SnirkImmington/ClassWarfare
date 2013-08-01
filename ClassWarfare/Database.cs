@@ -16,8 +16,9 @@ namespace ClassWarfare
     {
         public static List<ArenaData> Arenas { get; set; }
         public static List<PlayerData> Players { get; set; }
+        public static List<CWClass> Classes { get; set; }
 
-        public static IDbConnection Db { get; set; }
+        private static IDbConnection Db { get; set; }
 
         public static void LoadDatabase()
         {
@@ -55,6 +56,7 @@ namespace ClassWarfare
 
             Arenas = new List<ArenaData>();
             Players = new List<PlayerData>();
+            Classes = new List<CWClass>();
 
             #region Create tables, etc.
 
@@ -67,17 +69,17 @@ namespace ClassWarfare
 
             var table = new SqlTable("Arenas",
                 new SqlColumn("Name", MySqlDbType.String, 20) { Primary = true },
-                new SqlColumn("MineTile ID", MySqlDbType.Int16),
+                new SqlColumn("MineTileID", MySqlDbType.Int16),
                 //new SqlColumn("Region", MySqlDbType.Text),
 
-                new SqlColumn("Red Tiles Regions Names", MySqlDbType.MediumText),
-                new SqlColumn("Blue Tiles Regions Names", MySqlDbType.MediumText),
+                new SqlColumn("RedTilesRegionsNames", MySqlDbType.MediumText),
+                new SqlColumn("BlueTilesRegionsNames", MySqlDbType.MediumText),
 
-                new SqlColumn("Red Spawn", MySqlDbType.TinyText),
-                new SqlColumn("Blue Spawn", MySqlDbType.TinyText),
+                new SqlColumn("RedSpawn", MySqlDbType.TinyText),
+                new SqlColumn("BlueSpawn", MySqlDbType.TinyText),
 
-                new SqlColumn("Observation Point", MySqlDbType.TinyText),
-                new SqlColumn("Wire Point", MySqlDbType.TinyText));
+                new SqlColumn("ObservationPoint", MySqlDbType.TinyText),
+                new SqlColumn("WirePoint", MySqlDbType.TinyText));
 
             #endregion
 
@@ -87,18 +89,28 @@ namespace ClassWarfare
 
             #region Player Stats Table
             table = new SqlTable("PlayerStats",
-                new SqlColumn("Account ID", MySqlDbType.Int32) { Primary = true },
+                new SqlColumn("AccountID", MySqlDbType.Int32) { Primary = true },
 
-                new SqlColumn("Average Kills", MySqlDbType.UInt16),
-                new SqlColumn("Average Deaths", MySqlDbType.UInt16),
-                new SqlColumn("Average Tiles", MySqlDbType.UInt16),
+                new SqlColumn("AverageKills", MySqlDbType.UInt16),
+                new SqlColumn("AverageDeaths", MySqlDbType.UInt16),
+                new SqlColumn("AverageTiles", MySqlDbType.UInt16),
 
-                new SqlColumn("Total PvP Games", MySqlDbType.UInt16),
-                new SqlColumn("Total Miner Games", MySqlDbType.UInt16),
+                new SqlColumn("TotalPvPGames", MySqlDbType.UInt16),
+                new SqlColumn("TotalMinerGames", MySqlDbType.UInt16),
 
-                new SqlColumn("Games Won", MySqlDbType.UInt16),
-                new SqlColumn("Games Lost", MySqlDbType.UInt16),
-                new SqlColumn("Games Drawn", MySqlDbType.UInt16));
+                new SqlColumn("GamesWon", MySqlDbType.UInt16),
+                new SqlColumn("GamesLost", MySqlDbType.UInt16),
+                new SqlColumn("GamesDrawn", MySqlDbType.UInt16));
+            #endregion
+
+            creator.EnsureExists(table);
+
+            #region Classes Table
+            table = new SqlTable("CWClasses",
+                new SqlColumn("Name", MySqlDbType.String, 20) { Primary = true },
+                new SqlColumn("Type", MySqlDbType.String, 10),
+                new SqlColumn("Difficulty", MySqlDbType.String, 10),
+                new SqlColumn("Information", MySqlDbType.Text, 50));
             #endregion
 
             creator.EnsureExists(table);
@@ -118,7 +130,8 @@ namespace ClassWarfare
                         Arenas.Add(new ArenaData()
                         {
                             Name = reader.Get<string>("Name"),
-                            MineTileID = reader.Get<int>("MineTile ID"),
+                            WorldID = reader.Get<int>("WorldID"),
+                            MineTileID = reader.Get<int>("MineTileID"),
                             MT_Red = reader.Get<string>("Red Tiles Regions Names").Split(';').ToList().ConvertAll(n => TShock.Regions.ZacksGetRegionByName(n)).ToArray(),
                             MT_Blue = reader.Get<string>("Blue Tiles Regions Names").Split(';').ToList().ConvertAll(n => TShock.Regions.ZacksGetRegionByName(n)).ToArray(),
                             SpawnRed = new SpawnPoint(reader.Get<string>("Red Spawn")),
@@ -142,20 +155,39 @@ namespace ClassWarfare
                     {
                         Players.Add(new PlayerData()
                         {
-                            AccountID = reader.Get<int>("Account ID"),
-                            AverageKills = reader.Get<UInt16>("Average Kills"),
-                            AverageDeaths = reader.Get<UInt16>("Average Deaths"),
-                            AverageTiles = reader.Get<UInt16>("Average Tiles"),
-                            TotalPvPGames = reader.Get<UInt16>("Total PvP Games"),
-                            TotalMineGames = reader.Get<UInt16>("Total Miner Games"),
-                            GamesWon = reader.Get<UInt16>("Games Won"),
-                            GamesLost = reader.Get<UInt16>("Games Lost"),
-                            GamesDrawn = reader.Get<UInt16>("Games Drawn")
+                            AccountID = reader.Get<int>("AccountID"),
+                            AverageKills = reader.Get<UInt16>("AverageKills"),
+                            AverageDeaths = reader.Get<UInt16>("AverageDeaths"),
+                            AverageTiles = reader.Get<UInt16>("AverageTiles"),
+                            TotalPvPGames = reader.Get<UInt16>("TotalPvPGames"),
+                            TotalMineGames = reader.Get<UInt16>("TotalMinerGames"),
+                            GamesWon = reader.Get<UInt16>("GamesWon"),
+                            GamesLost = reader.Get<UInt16>("GamesLost"),
+                            GamesDrawn = reader.Get<UInt16>("GamesDrawn")
                         });
                     }
                 }
             }
             catch (Exception ex) { Log.Error("Class Warfare: Error loading player stats from database: " + ex.ToString()); }
+            #endregion
+
+            #region Classes
+            try
+            {
+                using (var reader = Db.QueryReader("SELECT * FROM CWAreanas"))
+                {
+                    Classes.Add(new CWClass()
+                    {
+                        Name = reader.Get<string>("Name"),
+                        Difficulty = reader.Get<string>("Difficulty"),
+                        Info = reader.Get<string>("Info"),
+                        Type = reader.Get<string>("Type"),
+                        Items = reader.Get<string>("Items").Split(';').ToList().ConvertAll(t => new DBItem(t)).ToArray()
+                    });
+
+                }
+            }
+            catch (Exception ex) { Log.Error("Class Warfare: Error loading class data from database :" + ex.ToString()); }
             #endregion
 
             #endregion
@@ -186,6 +218,8 @@ namespace ClassWarfare
 
     class ArenaData
     {
+        public int WorldID { get; set; }
+
         public string Name { get; set; }
         public int MineTileID { get; set; }
         //public Region Region { get; set; }
